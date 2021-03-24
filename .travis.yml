@@ -1,9 +1,10 @@
 language: c
 os: linux
+dist: bionic
 before-install:
-    -sudo apt install libncurses5-dev libreadline-dev nettle-dev libgnutls28-dev libargon2-0-dev libmsgpack-dev librestbed-dev libjsoncpp-dev
-    -sudo apt-get install libfuse-dev
-    -./opendht.sh
+- sudo apt install libncurses5-dev libreadline-dev nettle-dev libgnutls28-dev libargon2-0-dev libmsgpack-dev librestbed-dev libjsoncpp-dev
+- sudo apt-get install libfuse-dev
+- ./opendht.sh
 script:
 - make
 - (timeout 30 bash -c "echo ' ls' | make qemu-nox"; exit 0)
