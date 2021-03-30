@@ -1,2 +1,32 @@
-# p2pfs
-A P2P Fuse user-space filesystem with a DHT for distributing the files
+# Peer-to-peer Filesystem by Ivan Fernandez
+A P2P Fuse user-space filesystem that uses a DHT for distributing and storing the files.
+
+## Installation
+
+Prior to installing P2PFS, you will need to install its dependencies:
+- [OpenDHT](https://github.com/savoirfairelinux/opendht)
+- [Fuse](https://github.com/libfuse/libfuse), which you can get from its GitHub or directly by installing it through Ubuntu installer:
+
+```bash
+sudo apt-get install libfuse-dev
+```
+
+After installing all the dependencies of the program, you just run CMake on the root directory and that will compile the program:
+
+```bash
+make
+```
+
+## Usage
+
+```bash
+./p2pfs "directory to mount" "IP of known node of the network"
+```
+
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
