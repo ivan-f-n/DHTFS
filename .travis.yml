@@ -3,7 +3,11 @@ os: linux
 dist: bionic
 before-install:
 - sudo apt install libncurses5-dev libreadline-dev nettle-dev libgnutls28-dev libargon2-0-dev libmsgpack-dev librestbed-dev libjsoncpp-dev
-- sudo apt-get install libfuse-dev
+- sudo apt-get install python3 python3-pip python3-setuptools ninja-build
+- pip3 install wheel
+- pip3 install meson
+- sudo apt-get install wget
+- sudo apt-get install xz-utils
 - ./opendht.sh
 - sudo apt-get update
 script:
