@@ -5,13 +5,9 @@ A P2P Fuse user-space filesystem that uses a DHT for distributing and storing th
 
 Prior to installing P2PFS, you will need to install its dependencies:
 - [OpenDHT](https://github.com/savoirfairelinux/opendht)
-- [Fuse](https://github.com/libfuse/libfuse), which you can get from its GitHub or directly by installing it through Ubuntu installer:
+- [Fuse](https://github.com/libfuse/libfuse), which you can get from its GitHub and install it with their instructions. The version must be > 3.0
 
-```bash
-sudo apt-get install libfuse-dev
-```
-
-After installing all the dependencies of the program, you just run CMake on the root directory and that will compile the program:
+After installing all the dependencies of the program, you just run CMake on this root directory and that will compile the program:
 
 ```bash
 make

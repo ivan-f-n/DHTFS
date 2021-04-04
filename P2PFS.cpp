@@ -40,6 +40,7 @@ int foo(int argc, char *argv[], dht::DhtRunner* node)
     // Do something
     HelloFS fs;
     int status = fs.run(argc, argv, node);
+    cout << status;
     return status;
 }
 int main(int argc, char *argv[])
@@ -51,14 +52,7 @@ int main(int argc, char *argv[])
     node->run(4222, dht::crypto::generateIdentity(), true);
 
     cout << "Hey\n";
-    int g = 0;
-    while(g!=1)
-    {
-        g=0;
-        cin >> g;
-    }
     thread_obj.join();
-    cout << "Hey\n";
     return 0;
 
     // Join the network through any running node,
