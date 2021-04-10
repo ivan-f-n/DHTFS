@@ -6,12 +6,12 @@
 #include "Fusepp/Fuse.h"
 
 #include "Fusepp/Fuse-impl.h"
-class HelloFS : public Fusepp::Fuse<HelloFS>
+class FSpart : public Fusepp::Fuse<FSpart>
 {
 public:
-  HelloFS() {}
+  FSpart() {}
 
-  ~HelloFS() {}
+  ~FSpart() {}
 
   static int getattr (const char *, struct stat *, struct fuse_file_info *);
 

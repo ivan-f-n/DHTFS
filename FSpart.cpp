@@ -13,29 +13,35 @@ using namespace std;
 static const string root_path = "/";
 static const string hello_str = "Hello World!\n";
 static const string hello_path = "/hello";
-static string logfile ="";
+static string logfile =""; //Here we will save this session's log file path
+
+
 inline string getCurrentDateTime( string s ){
-    time_t now = time(0);
+    time_t now = time(0); //Save current time
     struct tm  tstruct;
     char  buf[80];
     tstruct = *localtime(&now);
+    //Either calculate the timestamp now or of just the date
     if(s=="now")
         strftime(buf, sizeof(buf), "%Y-%m-%d-%T %X", &tstruct);
     else if(s=="date")
         strftime(buf, sizeof(buf), "%Y-%m-%d-%T", &tstruct);
     return string(buf);
-};
+}
+
 inline void Logger( string logMsg ){
 
-    logfile = (logfile=="")?"/home/ivan/log/log_"+getCurrentDateTime("date")+".txt":logfile;
+    logfile = (logfile=="")?"/home/ivan/log/log_"+getCurrentDateTime("date")+".txt":logfile; //Save this session's log file path
     string filePath = logfile;
-    string now = getCurrentDateTime("now");
+    string now = getCurrentDateTime("now"); //Get current time from our function
+
+    //Log the message next to the current timestamp in our file
     ofstream ofs(filePath.c_str(), ios_base::out | ios_base::app );
     ofs << now << '\t' << logMsg << '\n';
     ofs.close();
 }
 
-int HelloFS::getattr(const char *path, struct stat *stbuf, struct fuse_file_info *)
+int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info *)
 {
 	int res = 0;
 
@@ -55,7 +61,7 @@ int HelloFS::getattr(const char *path, struct stat *stbuf, struct fuse_file_info
 	return res;
 }
 
-int HelloFS::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
+int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			               off_t, struct fuse_file_info *, enum fuse_readdir_flags)
 {
     Logger("reading root directory");
@@ -70,7 +76,7 @@ int HelloFS::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 }
 
 
-int HelloFS::open(const char *path, struct fuse_file_info *fi)
+int FSpart::open(const char *path, struct fuse_file_info *fi)
 {
     Logger("opening file");
 
@@ -93,7 +99,7 @@ int HelloFS::open(const char *path, struct fuse_file_info *fi)
 }
 
 
-int HelloFS::read(const char *path, char *buf, size_t size, off_t offset,
+int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
 		              struct fuse_file_info *)
 {
 

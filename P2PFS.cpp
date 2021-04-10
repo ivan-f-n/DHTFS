@@ -6,6 +6,7 @@
 #include "FSpart.h"
 #include "P2PFS.h"
 
+
 using namespace std;
 /*
   FUSE: Filesystem in Userspace
@@ -35,24 +36,73 @@ using namespace std;
  * fuse_opt_parse would attempt to free() them when the user specifies
  * different values on the command line.
  */
-int foo(int argc, char *argv[], dht::DhtRunner* node)
+int foo(int argc, char *argv[], dht::DhtRunner* node, pid_t* tid)
 {
-    // Do something
-    HelloFS fs;
-    int status = fs.run(argc, argv, node);
-    cout << status;
+    FSpart fs; //Create the FUSE part object
+    *tid = syscall(SYS_gettid); //Save the tid
+    int status = fs.run(argc, argv, node); //Call our function that will in turn call fuse_main()
     return status;
+}
+void usage()
+{
+    cerr << "usage: p2pfs -new \"directory to mount\" \n or if you would like to connect to an existing network: p2pfs \"IP:port\" \"directory to mount\" \n";
+    throw std::invalid_argument("Invalid syntax.");
+    exit(EXIT_FAILURE);
 }
 int main(int argc, char *argv[])
 {
-    cout << "Start\n";
+    //Variables declarations
+    pid_t* tid; //Thread id of FUSE thread
+    tid = (pid_t*) malloc(sizeof(pid_t));
+    bool newNetwork = false;
+
+
+    string firstArg(argv[1]); //We pass the first argument to string
+    //Regex to check the IP is of a valid format
+    regex IPRegex("^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?):[0-9]+$");
+    //Check if the first argument is valid
+    if(firstArg.compare("-new") == 0) //If we want to create new network
+    {
+        cout << "Creating new network\n";
+        newNetwork = true;
+    }else if(!std::regex_match (firstArg,IPRegex)) //Otherwise check IP:port format correct
+    {
+        usage();
+    }
+    //Now we want to create the new array of arguments that will be passed to fuse_main()
+    char ** FUSEArgs = new char* [argc-1];
+    int j = 0;
+    for(int i = 0; i<argc; i++)
+    {
+        if(i == 1) continue;
+        FUSEArgs[j] = argv[i];
+        j++;
+    }
+
+    //Create and run the DHT node
     dht::DhtRunner* node = new dht::DhtRunner;
-    std::thread thread_obj(foo, argc,argv,node);
-    cout << "thread\n";
     node->run(4222, dht::crypto::generateIdentity(), true);
 
-    cout << "Hey\n";
-    thread_obj.join();
+    //If the user provided an IP and port, bootstrap to that network
+    string delimiter = ":";
+    if(!newNetwork)
+    {
+        //Extract IP and port from argument
+        string IP = firstArg.substr(0, firstArg.find(delimiter));
+        string port = firstArg.substr(firstArg.find(delimiter) + 1);
+        //Bootstrap
+        node->bootstrap(IP, port);
+    }
+    //Run the Fuse thread
+    thread thread_obj(foo, argc-1, FUSEArgs, node, tid);
+
+    sleep(5); //Run for 5 seconds (This is for automated testing purposes only)
+
+    cout << "Exiting program";
+    node->join(); //Join the DHT node
+    kill(*tid, SIGTERM); //Kill the FUSE thread
+    free(tid); //Free the allocation for the thread ID
+    thread_obj.join(); //Join the FUSE thread
     return 0;
 
     // Join the network through any running node,

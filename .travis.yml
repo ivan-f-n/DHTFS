@@ -14,4 +14,4 @@ before-install:
 script:
 - (timeout 30 bash -c "echo ' ls' | make"; exit 0)
 - mkdir try
-- sudo ./p2pfs try/
+- sudo ./p2pfs -new -f try/

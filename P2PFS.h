@@ -5,6 +5,11 @@
 #include <vector>
 #include <string>
 
+#include <sys/syscall.h>
+#include <signal.h>
+#include <stdlib.h>
+#include <regex>
+
 #ifndef PROJECT_P2PFS_H
 #define PROJECT_P2PFS_H
 
