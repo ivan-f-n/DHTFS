@@ -2,7 +2,7 @@ PROG=p2pfs
 OBJDIR=.obj
 CC=g++
 
-CFLAGS = -Wall --std=c++14 -lopendht -lgnutls `pkg-config fuse3 --cflags ` -I..
+CFLAGS = -Wall --std=c++14 -lopendht -lgnutls `pkg-config fuse3 --cflags ` -I.. -I msgpack-c/include
 LDFLAGS = -lopendht -lgnutls `pkg-config fuse3 --libs `
 
 $(shell mkdir -p $(OBJDIR)) 

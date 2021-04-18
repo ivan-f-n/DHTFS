@@ -24,6 +24,14 @@ public:
 
   static int read(const char *path, char *buf, size_t size, off_t offset,
                   struct fuse_file_info *fi);
+  static int mkdir(const char * path, mode_t mode);
+
+  static int create(const char *path, mode_t mode, struct fuse_file_info *fi);
+
+  static int truncate(const char *path, off_t offset, struct fuse_file_info *fi);
+
+  static int write(const char * path, const char * buf, size_t size, off_t offset,struct fuse_file_info * fi);
+
 };
 
 #endif

@@ -7,11 +7,14 @@ before-install:
 - pip3 install wheel
 - pip3 install pytest
 - pip3 install meson
-- sudo apt-get install wget
+- sudo apt-get install wget openssl
 - sudo apt-get install xz-utils
 - ./opendht.sh
 - sudo apt-get update
 script:
-- (timeout 30 bash -c "echo ' ls' | make"; exit 0)
 - mkdir try
-- sudo ./p2pfs -new -f try/
+- sudo ./p2pfs -new -f try/ &
+- cd try
+- echo 5 > input.txt
+- cat input.txt
+- openssl rand -out sample.txt -base64 $(( 2**14 * 3/4 ))
