@@ -124,7 +124,7 @@ int main(int argc, char *argv[])
     }else{
         addRoot();
     }
-    auto token = node->listen<map<string,int>>(dht::InfoHash::get(files),
+    /*auto token = node->listen<map<string,int>>(dht::InfoHash::get(files),
                                                [&](map<string,int>&& value) {
 
 //        //msgpack::sbuffer sbuf;
@@ -142,7 +142,7 @@ int main(int argc, char *argv[])
 
         return true; // keep listening
         }
-    );
+    );*/
     //Run the Fuse thread
     cout << "Creating thread\n";
     thread thread_obj(foo, argc - (newNetwork ? 1 : 2), FUSEArgs, node, &filesInodes, filesValue, tid);

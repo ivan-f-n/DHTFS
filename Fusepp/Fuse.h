@@ -37,6 +37,11 @@
 
 
 using namespace std;
+struct datum{
+    dht::DhtRunner* n;
+    map<string, int> fi;
+    dht::Value* fiv;
+};
 
 namespace Fusepp
 {
@@ -115,22 +120,24 @@ namespace Fusepp
 
     ~Fuse() = default;
 
-    auto run(int argc, char **argv, dht::DhtRunner* node)
+    auto run(int argc, char **argv, dht::DhtRunner* n, map<string, int>* fi, dht::Value* fiv)
     {
-        std::string hello_str = "Hello World!\n";
-        node->put("1", dht::Value((const uint8_t*)hello_str.data(), hello_str.size()));
-        return fuse_main(argc, argv, Operations(), (void*)node);
+        struct datum* d= (struct datum*)malloc(sizeof(struct datum));
+        d->n = n;
+        d->fi = *fi;
+        d->fiv = fiv;
+        return fuse_main(argc, argv, Operations(), (void*)d);
     }
 
     auto Operations() { return &operations_; }
 
-    static dht::DhtRunner* this_()
+    static struct datum* this_()
     {
-      return (dht::DhtRunner*)(fuse_get_context()->private_data);
+      return (struct datum*)(fuse_get_context()->private_data);
     }
 
   private:
-      
+
     static void load_operations_()
     {
       operations_.getattr = T::getattr;

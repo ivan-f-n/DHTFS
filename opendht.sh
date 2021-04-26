@@ -16,8 +16,3 @@ mkdir build && cd build
 cmake -DOPENDHT_PEER_DISCOVERY=OFF -DOPENDHT_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
 make -j4
 sudo make install
-git clone https://github.com/msgpack/msgpack-c.git
-cd msgpack-c
-cmake -DMSGPACK_CXX[11|17]=ON .
-make
-sudo make install

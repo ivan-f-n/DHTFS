@@ -3,6 +3,7 @@
 #include "FSpart.h"
 
 #include <vector>
+#include <sys/time.h>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -104,10 +105,6 @@ int changeEntry(const char* path, int inode)
     size_t found;
     found=p.find_last_of("/");
     string dir = p.substr(0,found);
-    msgpack::sbuffer sbuf2;
-    msgpack::pack(sbuf2, inodeMap);
-    dht::Value t ((uint8_t*)sbuf2.data(), sbuf2.size());
-    valuePtr = &t;
     if(!dir.compare(""))
     {
         dir = "/";
@@ -190,9 +187,9 @@ inline void Logger( string logMsg ){
 int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info * fi)
 {
     Logger("Getting attributes for "+ string(path));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -223,13 +220,19 @@ int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info 
 	return res;
 }
 
+
+int diff_ms(timeval t1, timeval t2)
+{
+    return (((t1.tv_sec - t2.tv_sec) * 1000000) + 
+            (t1.tv_usec - t2.tv_usec))/1000;
+}
 int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 			               off_t, struct fuse_file_info * fi, enum fuse_readdir_flags)
 {
     Logger("Reading directory " + string(path));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -256,9 +259,9 @@ int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 int FSpart::mkdir(const char * path, mode_t mode)
 {
     Logger("Making directory " + string(path));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -296,9 +299,9 @@ int FSpart::mkdir(const char * path, mode_t mode)
 int FSpart::open(const char *path, struct fuse_file_info *fi)
 {
     Logger("Opening file " + string(path));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -317,9 +320,9 @@ int FSpart::open(const char *path, struct fuse_file_info *fi)
 int FSpart::create(const char *path, mode_t mode, struct fuse_file_info *fi)
 {
     Logger("Creating file " + string(path) + "with mode: " + to_string(mode));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -360,10 +363,13 @@ int FSpart::create(const char *path, mode_t mode, struct fuse_file_info *fi)
 int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
 		              struct fuse_file_info *)
 {
+    struct timeval tvalBefore, tvalAfter;  // removed comma
+
+    gettimeofday (&tvalBefore, NULL);
     Logger("Reading "+to_string(size)+" bytes from file " + string(path));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -385,6 +391,7 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
         // get data from the dht
         runner->get(dht::InfoHash::get(i->files[(int) (offset+bytesRead / i->st.st_blksize)]), [&](const shared_ptr<dht::Value>& value) {
             block = new unsigned char[(*value).data.size()];
+            
             copy((*value).data.begin(), (*value).data.end(), block);
             return false; // return false to stop the search
         }, [&](bool success) {
@@ -398,7 +405,7 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
         }
         if(bytesRead==0)
         {
-            if((int)((offset+bytesRead) / i->st.st_blksize) == (int)((offset+size-1) / i->st.st_blksize))
+            if((size+offset-bytesRead) < i->st.st_blksize)
             {
                 memcpy(buf+bytesRead, block + offset%i->st.st_blksize, min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
                 bytesRead += (min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
@@ -407,29 +414,28 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
                 bytesRead += (i->st.st_blksize - offset%i->st.st_blksize);
             }
         }else{
-            if(((offset+bytesRead) / i->st.st_blksize) == ((offset+size-1) / i->st.st_blksize))
+            if((size-bytesRead) < i->st.st_blksize)
             {
-                memcpy(buf+bytesRead, block, min((int)(size-bytesRead), (int)(i->st.st_blksize)));
-                bytesRead += min((int)(size-bytesRead), (int)(i->st.st_blksize));
+                memcpy(buf+bytesRead, block, (size-bytesRead));
+                bytesRead += (size-bytesRead);
             } else {
                 memcpy(buf+bytesRead, block, i->st.st_blksize);
                 bytesRead += (i->st.st_blksize);
             }
         }
         
-        
     }
-
-
+    gettimeofday (&tvalAfter, NULL);
+    printf("Read took %d ms\n", diff_ms(tvalBefore, tvalAfter));
 	return size;
 }
 
 int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
 {
     Logger("Truncating file " + string(path) + " to " + to_string(offset));
-    inodeMap = *(Fuse::this_()->fi);
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -453,7 +459,7 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
     if(offset>fileSize)
     {
         
-        for(int j = 0; j <= ((int)((offset-offSub)/blkSize)-(int)((fileSize-sizeSub)/blkSize)); j++)
+        for(int j = 0; j <= (((int)((offset-offSub)/blkSize))-(int)((fileSize-sizeSub)/blkSize)); j++)
         {
             
             if(j==0)
@@ -474,17 +480,17 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                 while (!s && time(0) - 5 < now); //Wait until value is received or timeout
 
                 if (!s) {
-                    return 0;
+                    return -ENOENT;
                 }
                 unsigned char* b;
                 int sb = 0;
-                if((int)((offset-offSub)/blkSize)-(int)((fileSize-sizeSub)/blkSize) == 0)
+                if(((int)((offset-offSub)/blkSize))-((int)((fileSize-sizeSub)/blkSize)) == 0)
                 {
                     sb = ((offset-offSub) % blkSize)+1;
                     b = new unsigned char[sb];
                     memcpy(b, block, siz);
                     if(siz != sb)
-                        memset(b+siz, 0, (offset-fileSize));
+                        memset(b+siz, 0, (sb-siz));
                 }else{
                     sb = blkSize;
                     b = new unsigned char[sb];
@@ -492,7 +498,6 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                     memset(b+siz, 0, blkSize - siz);
                     
                 }
-                
                 int newI = genInode();
                 bool successful = false;
                 i->files[(int) ((fileSize-sizeSub)/(blkSize))] = to_string(newI);
@@ -510,7 +515,7 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                 int sb = 0;
                 if((int)((offset-offSub)/blkSize)-(int)((fileSize-sizeSub)/blkSize) == j)
                 {
-                    sb = (offset-offSub % (blkSize))+1;
+                    sb = ((offset-offSub) % (blkSize))+1;
                     
                 }else{
                     sb = blkSize;
@@ -575,7 +580,6 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
     
     changeEntry(path, inode);
     bool successful = false;
-    
     runner->put(dht::InfoHash::get(to_string(inode)), *i, [&](bool success) { 
         std::lock_guard<std::mutex> l(mtx);
         successful = true;
@@ -595,10 +599,14 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
 
 int FSpart::write(const char * path, const char * buf, size_t size, off_t offset,struct fuse_file_info * fi)
 {
+    struct timeval tvalBefore, tvalAfter;  // removed comma
+
+    gettimeofday (&tvalBefore, NULL);
     Logger("Wrtiting to file " + string(path));
-    inodeMap = *(Fuse::this_()->fi);
+    
     if(!inst)
     {
+        inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
         runner = Fuse::this_()->n;
@@ -636,9 +644,10 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
         {
             unsigned char *block;
             bool s = false;
+            int si;
             // get data from the dht
             runner->get(dht::InfoHash::get(i->files[(int)((offset + bytesWritten)/blkSize)]), [&](const shared_ptr<dht::Value>& value) {
-                int si = (*value).data.size();
+                si = (*value).data.size();
                 block = new unsigned char[si];
                 copy((*value).data.begin(), (*value).data.end(), block);
                 return false; // return false to stop the search
@@ -654,7 +663,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
             int newI = genInode();
             i->files[(int) ((offset + bytesWritten) / blkSize)] = to_string(newI);
             s = false;
-            runner->put(dht::InfoHash::get(to_string(newI)), dht::Value(block, blkSize), [&](bool success) {
+            runner->put(dht::InfoHash::get(to_string(newI)), dht::Value(block, si), [&](bool success) {
                 std::lock_guard<std::mutex> l(mtx);
                 s = true;
                 cv.notify_all();
@@ -671,9 +680,10 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
         else {
             unsigned char *block;
             bool s = false;
+            int si;
             // get data from the dht
             runner->get(dht::InfoHash::get(i->files[(int)((offset + bytesWritten)/blkSize)]), [&](const shared_ptr<dht::Value>& value) {
-                int si = (*value).data.size();
+                si = (*value).data.size();
                 block = new unsigned char[si];
                 copy((*value).data.begin(), (*value).data.end(), block);
                 return false; // return false to stop the search
@@ -689,7 +699,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
             int newI = genInode();
             i->files[(int) ((offset + bytesWritten) / blkSize)] = to_string(newI);
             s = false;
-            runner->put(dht::InfoHash::get(to_string(newI)), dht::Value(block, blkSize), [&](bool success) {
+            runner->put(dht::InfoHash::get(to_string(newI)), dht::Value(block, si), [&](bool success) {
                 std::lock_guard<std::mutex> l(mtx);
                 s = true;
                 cv.notify_all();
@@ -719,6 +729,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
         Logger("Writing file " + string(path) + "failed (not put)");
         return -ENOENT;
     }
+    gettimeofday (&tvalAfter, NULL);
+    printf("Write took %d ms\n", diff_ms(tvalBefore, tvalAfter));
     return bytesWritten;
 }
-
