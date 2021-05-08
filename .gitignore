@@ -1,4 +1,4 @@
 .obj
-fuse-3.9.0
-fuse-3.9.0.tar.xz
+fuse-*
 p2pfs
+.vscode/settings.json

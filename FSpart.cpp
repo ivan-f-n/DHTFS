@@ -45,6 +45,31 @@ struct statSerial {
     MSGPACK_DEFINE(st_dev, st_ino, st_mode, st_nlink, st_uid, st_gid, st_rdev, st_size, st_blksize, st_blocks);
 };
 
+inline string getCurrentDateTime( string s ){
+    time_t now = time(0); //Save current time
+    struct tm  tstruct;
+    char  buf[80];
+    tstruct = *localtime(&now);
+    //Either calculate the timestamp now or of just the date
+    if(s=="now")
+        strftime(buf, sizeof(buf), "%Y-%m-%d-%T %X", &tstruct);
+    else if(s=="date")
+        strftime(buf, sizeof(buf), "%Y-%m-%d-%T", &tstruct);
+    return string(buf);
+}
+
+inline void Logger( string logMsg ){
+    cout << "Logging" << endl;
+    logfile = (logfile=="")?"/home/ivan/log/log_"+getCurrentDateTime("date")+".txt":logfile; //Save this session's log file path
+    string filePath = logfile;
+    string now = getCurrentDateTime("now"); //Get current time from our function
+
+    //Log the message next to the current timestamp in our file
+    ofstream ofs(filePath.c_str(), ios_base::out | ios_base::app );
+    ofs << now << '\t' << logMsg << '\n';
+    ofs.close();
+    cout << "Logged" << endl;
+}
 //Class that for each file contains:
 //-Directory: stbuf struct and the files is the directory
 //-Regular file: stbuf struct and the inodes (id) of the blocks of the file
@@ -59,6 +84,32 @@ public:
         st = other.st;
         files = other.files;
         return *this;
+    }
+
+    operator string() {
+        string stringOfStruct;
+        cout << "stringOfStruct" << endl;
+
+        char buffer[100];
+        sprintf(buffer, "%lu", (unsigned long)st.st_ino);
+        stringOfStruct += "\nInode number" + string(buffer);
+
+        char buffer2[100];
+        sprintf(buffer2, "%u", (unsigned int)st.st_uid);
+        stringOfStruct += "\nUser ID owner" + string(buffer2);
+
+        char buffer3[100];
+        sprintf(buffer3, "%ld", (long)st.st_size);
+        stringOfStruct += "\n Size" + string(buffer3);
+
+        cout << "stringOfStruct2" << endl;
+
+        stringOfStruct += "\n Files: ";
+        for(int i = 0; i<files.size(); i++) {
+            stringOfStruct += "\n" + files.at(i);
+        }
+        cout << stringOfStruct << endl;
+        return stringOfStruct;
     }
 };
 
@@ -85,6 +136,7 @@ int genInode()
 
 inodeFiles* getInodeStruct(const char* path)
 {
+    Logger("Get inode struct start");
     inodeFiles* i = new inodeFiles();
     // get data from the dht
     if(getInodeBack(path) == -1)    return NULL;
@@ -96,6 +148,7 @@ inodeFiles* getInodeStruct(const char* path)
     time_t now = time(0); //Save current time
     mode_t s = i->st.st_mode;
     while(i->st.st_mode == s && time(0)-5 < now); //Wait until value is received or timeout
+    Logger("Get inode struct end");
     return i;
 }
 
@@ -159,36 +212,13 @@ int changeEntry(const char* path, int inode)
     return 0;
 }
 
-inline string getCurrentDateTime( string s ){
-    time_t now = time(0); //Save current time
-    struct tm  tstruct;
-    char  buf[80];
-    tstruct = *localtime(&now);
-    //Either calculate the timestamp now or of just the date
-    if(s=="now")
-        strftime(buf, sizeof(buf), "%Y-%m-%d-%T %X", &tstruct);
-    else if(s=="date")
-        strftime(buf, sizeof(buf), "%Y-%m-%d-%T", &tstruct);
-    return string(buf);
-}
-
-inline void Logger( string logMsg ){
-
-    logfile = (logfile=="")?"/home/ivan/log/log_"+getCurrentDateTime("date")+".txt":logfile; //Save this session's log file path
-    string filePath = logfile;
-    string now = getCurrentDateTime("now"); //Get current time from our function
-
-    //Log the message next to the current timestamp in our file
-    ofstream ofs(filePath.c_str(), ios_base::out | ios_base::app );
-    ofs << now << '\t' << logMsg << '\n';
-    ofs.close();
-}
-
 int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info * fi)
 {
     Logger("Getting attributes for "+ string(path));
     if(!inst)
     {
+        cout << "Create instance" << endl;
+
         inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
@@ -202,6 +232,8 @@ int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info 
         Logger(string(path) + " not found");
         return -ENOENT;
     }else{
+        Logger(string(path) + " found");
+        Logger("Path  "+ string(path) + ": " + string(*i));
         memset(stbuf, 0, sizeof(struct stat));
         time_t now = time(0); //Save current time
         stbuf->st_size = i->st.st_size;

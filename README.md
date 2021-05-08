@@ -16,15 +16,13 @@ make
 ## Usage
 
 ```bash
-./p2pfs "IP:Port of known node of the network" -f "directory to mount"
+./p2pfs "IP:Port of known node of the network" "Local port to bind" "Directory to mount"
 ```
 or, if theres no network in place yet:
 
 ```bash
-./p2pfs -new -f "directory to mount"
+./p2pfs -new "Directory to mount"
 ```
-
-The -f flag is important, otherwise FUSE will work in the background which will break the DHT part of the program and thus make the File System unusable.
 
 ## Contributing
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
