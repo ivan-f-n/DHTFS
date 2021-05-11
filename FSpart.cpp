@@ -59,7 +59,6 @@ inline string getCurrentDateTime( string s ){
 }
 
 inline void Logger( string logMsg ){
-    cout << "Logging" << endl;
     logfile = (logfile=="")?"/home/ivan/log/log_"+getCurrentDateTime("date")+".txt":logfile; //Save this session's log file path
     string filePath = logfile;
     string now = getCurrentDateTime("now"); //Get current time from our function
@@ -68,7 +67,6 @@ inline void Logger( string logMsg ){
     ofstream ofs(filePath.c_str(), ios_base::out | ios_base::app );
     ofs << now << '\t' << logMsg << '\n';
     ofs.close();
-    cout << "Logged" << endl;
 }
 //Class that for each file contains:
 //-Directory: stbuf struct and the files is the directory
@@ -88,7 +86,6 @@ public:
 
     operator string() {
         string stringOfStruct;
-        cout << "stringOfStruct" << endl;
 
         char buffer[100];
         sprintf(buffer, "%lu", (unsigned long)st.st_ino);
@@ -102,13 +99,11 @@ public:
         sprintf(buffer3, "%ld", (long)st.st_size);
         stringOfStruct += "\n Size" + string(buffer3);
 
-        cout << "stringOfStruct2" << endl;
 
         stringOfStruct += "\n Files: ";
         for(int i = 0; i<files.size(); i++) {
             stringOfStruct += "\n" + files.at(i);
         }
-        cout << stringOfStruct << endl;
         return stringOfStruct;
     }
 };
@@ -147,7 +142,7 @@ inodeFiles* getInodeStruct(const char* path)
 
     time_t now = time(0); //Save current time
     mode_t s = i->st.st_mode;
-    while(i->st.st_mode == s && time(0)-5 < now); //Wait until value is received or timeout
+    while(i->st.st_mode == s && time(0)-1 < now); //Wait until value is received or timeout
     Logger("Get inode struct end");
     return i;
 }
@@ -217,8 +212,6 @@ int FSpart::getattr(const char *path, struct stat *stbuf, struct fuse_file_info 
     Logger("Getting attributes for "+ string(path));
     if(!inst)
     {
-        cout << "Create instance" << endl;
-
         inodeMap = Fuse::this_()->fi;
         valuePtr = Fuse::this_()->fiv;
         fileStr = "fileStr";
@@ -271,6 +264,8 @@ int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         inst = 1;
     }
     inodeFiles* i = getInodeStruct(path);
+    Logger("Path  "+ string(path) + ": " + string(*i));
+        
     if(i==NULL)
     {
         Logger(string(path) + " not found");
@@ -398,7 +393,6 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
     struct timeval tvalBefore, tvalAfter;  // removed comma
 
     gettimeofday (&tvalBefore, NULL);
-    Logger("Reading "+to_string(size)+" bytes from file " + string(path));
     if(!inst)
     {
         inodeMap = Fuse::this_()->fi;
@@ -416,10 +410,12 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
     }
     if(offset > i->st.st_size)  return 0;
     if(offset+size > i->st.st_size) size = i->st.st_size - offset;
+    Logger("Reading "+to_string(size)+" bytes from file " + string(path));
     int bytesRead = 0;
     while(bytesRead < size)
     {
         unsigned char* block;
+        Logger("Reading the block number "+to_string((int) (offset+bytesRead / i->st.st_blksize)));
         // get data from the dht
         runner->get(dht::InfoHash::get(i->files[(int) (offset+bytesRead / i->st.st_blksize)]), [&](const shared_ptr<dht::Value>& value) {
             block = new unsigned char[(*value).data.size()];
@@ -429,7 +425,7 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
         }, [&](bool success) {
         }, {}, {});
         time_t now = time(0);
-        while(block==NULL && time(0)-5 < now); //Wait until value is received or timeout
+        while(block==NULL && time(0)-1 < now); //Wait until value is received or timeout
 
         if(block==NULL)
         {
@@ -437,13 +433,13 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
         }
         if(bytesRead==0)
         {
-            if((size+offset-bytesRead) < i->st.st_blksize)
+            if((size+offset) < i->st.st_blksize)
             {
-                memcpy(buf+bytesRead, block + offset%i->st.st_blksize, min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
-                bytesRead += (min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
+                memcpy(buf, block + offset%i->st.st_blksize, min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
+                bytesRead = (min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
             } else {
-                memcpy(buf+bytesRead, block + offset%i->st.st_blksize, i->st.st_blksize - offset%i->st.st_blksize);
-                bytesRead += (i->st.st_blksize - offset%i->st.st_blksize);
+                memcpy(buf, block + offset%i->st.st_blksize, i->st.st_blksize - offset%i->st.st_blksize);
+                bytesRead = (i->st.st_blksize - offset%i->st.st_blksize);
             }
         }else{
             if((size-bytesRead) < i->st.st_blksize)
@@ -509,7 +505,7 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                 },[&](bool success) { s = success;
                 }, {}, {});
                 time_t now = time(0);
-                while (!s && time(0) - 5 < now); //Wait until value is received or timeout
+                while (!s && time(0) - 1 < now); //Wait until value is received or timeout
 
                 if (!s) {
                     return -ENOENT;
@@ -581,7 +577,7 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                 },[&](bool success) { s = success;
                 }, {}, {});
                 time_t now = time(0);
-                while (!s && time(0) - 5 < now); //Wait until value is received or timeout
+                while (!s && time(0) - 1 < now); //Wait until value is received or timeout
 
                 if (!s) {
                     return 0;
@@ -686,7 +682,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
             },[&](bool success) { s = success;
             }, {}, {});
             time_t now = time(0);
-            while (!s && time(0) - 5 < now); //Wait until value is received or timeout
+            while (!s && time(0) - 1 < now); //Wait until value is received or timeout
 
             if (!s) {
                 return -ENOENT;
@@ -707,7 +703,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
                 return -ENOENT;
             }
             
-            bytesWritten += min((int)size,(int) (blkSize-offset%blkSize));
+            bytesWritten = min((int)size,(int) (blkSize-offset%blkSize));
         }
         else {
             unsigned char *block;
@@ -722,7 +718,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
             },[&](bool success) { s = success;
             }, {}, {});
             time_t now = time(0);
-            while (!s && time(0) - 5 < now); //Wait until value is received or timeout
+            while (!s && time(0) - 1 < now); //Wait until value is received or timeout
 
             if (!s) {
                 return -ENOENT;
