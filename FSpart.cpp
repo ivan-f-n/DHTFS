@@ -415,9 +415,9 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
     while(bytesRead < size)
     {
         unsigned char* block;
-        Logger("Reading the block number "+to_string((int) (offset+bytesRead / i->st.st_blksize)));
+        Logger("Reading the block number "+to_string((int) ((offset+bytesRead) / i->st.st_blksize)));
         // get data from the dht
-        runner->get(dht::InfoHash::get(i->files[(int) (offset+bytesRead / i->st.st_blksize)]), [&](const shared_ptr<dht::Value>& value) {
+        runner->get(dht::InfoHash::get(i->files[(int) ((offset+bytesRead) / i->st.st_blksize)]), [&](const shared_ptr<dht::Value>& value) {
             block = new unsigned char[(*value).data.size()];
             
             copy((*value).data.begin(), (*value).data.end(), block);
@@ -433,24 +433,27 @@ int FSpart::read(const char *path, char *buf, size_t size, off_t offset,
         }
         if(bytesRead==0)
         {
+            int bytesToRead;
             if((size+offset) < i->st.st_blksize)
             {
-                memcpy(buf, block + offset%i->st.st_blksize, min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
-                bytesRead = (min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize);
+                bytesToRead = min((int)(offset%i->st.st_blksize + size), (int)(i->st.st_blksize)) - offset%i->st.st_blksize;
             } else {
-                memcpy(buf, block + offset%i->st.st_blksize, i->st.st_blksize - offset%i->st.st_blksize);
-                bytesRead = (i->st.st_blksize - offset%i->st.st_blksize);
+                bytesToRead = i->st.st_blksize - offset%i->st.st_blksize;
             }
+            memcpy(buf, block + offset%i->st.st_blksize, bytesToRead);
+            bytesRead = bytesToRead;
         }else{
+            int bytesToRead;
             if((size-bytesRead) < i->st.st_blksize)
             {
-                memcpy(buf+bytesRead, block, (size-bytesRead));
-                bytesRead += (size-bytesRead);
+                bytesToRead = size-bytesRead;
             } else {
-                memcpy(buf+bytesRead, block, i->st.st_blksize);
-                bytesRead += (i->st.st_blksize);
+                bytesToRead = i->st.st_blksize;
             }
+            memcpy(buf+bytesRead, block, bytesToRead);
+            bytesRead += bytesToRead;
         }
+        Logger("Bytes read so far:" + to_string(bytesRead));
         
     }
     gettimeofday (&tvalAfter, NULL);
@@ -723,7 +726,7 @@ int FSpart::write(const char * path, const char * buf, size_t size, off_t offset
             if (!s) {
                 return -ENOENT;
             }
-            memcpy(block, buf, min((int)size-bytesWritten,(int) blkSize));
+            memcpy(block, buf+bytesWritten, min((int)size-bytesWritten,(int) blkSize));
             int newI = genInode();
             i->files[(int) ((offset + bytesWritten) / blkSize)] = to_string(newI);
             s = false;
