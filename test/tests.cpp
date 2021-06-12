@@ -1,8 +1,7 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 
-#include "../FSpart.h"
-#include "../P2PFS.h"
+#include "../src/support/globalFunctions.h"
 
 class MockRunner {
  public:
@@ -11,9 +10,9 @@ class MockRunner {
 
 // Demonstrate some basic assertions.
 TEST(MainTest, MapInsertion) {
-  filesInodes.insert(make_pair("test", 1));
+  inodeMap.insert(make_pair("test", 1));
   // Expect two strings not to be equal.
-  EXPECT_EQ(filesInodes["test"], 1);
+  EXPECT_EQ(inodeMap["test"], 1);
 }
 
 TEST(FileSystemTest, GenInode) {

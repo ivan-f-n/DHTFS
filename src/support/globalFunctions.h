@@ -12,6 +12,7 @@ dht::Value *valuePtr;
 static int inst = 0;
 dht::DhtRunner *runner;
 map<string, int> inodeMap;
+
 map<string, int> getMap()
 {
     return inodeMap;

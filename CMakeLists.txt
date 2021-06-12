@@ -21,8 +21,6 @@ enable_testing()
 add_executable(
   tests
   test/tests.cpp
-  P2PFS.cpp
-  FSpart.cpp
 )
 target_include_directories(tests SYSTEM PUBLIC ${FUSE_INCLUDE_DIRS})
 target_link_libraries(

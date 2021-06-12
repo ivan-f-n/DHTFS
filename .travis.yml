@@ -13,6 +13,6 @@ before-install:
 - sudo apt-get update
 script:
 - (timeout 30 bash -c "echo ' ls' | make"; exit 0)
-- mkdir try
-- sudo killall -9 p2pfs
-- sudo ./p2pfs try/
+- cmake -S . -B build
+- cmake --build build
+- cd build && ctest
