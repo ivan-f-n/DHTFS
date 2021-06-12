@@ -6,6 +6,7 @@
 #include "Fusepp/Fuse.h"
 
 #include "Fusepp/Fuse-impl.h"
+
 class FSpart : public Fusepp::Fuse<FSpart>
 {
 public:

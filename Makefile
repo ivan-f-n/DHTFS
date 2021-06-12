@@ -1,4 +1,4 @@
-PROG=p2pfs
+PROG=dhtfs
 OBJDIR=.obj
 CC=g++
 
@@ -15,8 +15,8 @@ $(PROG) : $(OBJS)
 -include $(OBJS:.o=.d)
 
 $(OBJDIR)/%.o: %.cpp
-	$(CC) -c $(CFLAGS) $*.cpp -o $(OBJDIR)/$*.o
-	$(CC) -MM $(CFLAGS) $*.cpp > $(OBJDIR)/$*.d
+	$(CC) -c $(CFLAGS) src/$*.cpp -o $(OBJDIR)/$*.o
+	$(CC) -MM $(CFLAGS) src/$*.cpp > $(OBJDIR)/$*.d
 	@mv -f $(OBJDIR)/$*.d $(OBJDIR)/$*.d.tmp
 	@sed -e 's|.*:|$(OBJDIR)/$*.o:|' < $(OBJDIR)/$*.d.tmp > $(OBJDIR)/$*.d
 	@sed -e 's/.*://' -e 's/\\$$//' < $(OBJDIR)/$*.d.tmp | fmt -1 | \

@@ -1,42 +1,9 @@
-//
-// Created by ifnav on 02/02/2020.
-//
-
-#include <vector>
-#include <string>
-
-#include <sys/syscall.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <regex>
+#include "support/global.h"
 
 map<string, int> filesInodes;
 dht::Value* filesValue = NULL;
 static const string files = "fileStr";
 dht::DhtRunner* node;
-
-struct statSerial {
-    dev_t     st_dev;     /* ID of device containing file */
-    ino_t     st_ino;     /* inode number */
-    mode_t    st_mode;    /* protection */
-    nlink_t   st_nlink;   /* number of hard links */
-    uid_t     st_uid;     /* user ID of owner */
-    gid_t     st_gid;     /* group ID of owner */
-    dev_t     st_rdev;    /* device ID (if special file) */
-    off_t     st_size;    /* total size, in bytes */
-    blksize_t st_blksize; /* blocksize for file system I/O */
-    blkcnt_t  st_blocks;  /* number of 512B blocks allocated */
-
-    //Implements serialization
-    MSGPACK_DEFINE(st_dev, st_ino, st_mode, st_nlink, st_uid, st_gid, st_rdev, st_size, st_blksize, st_blocks);
-};
-class inodeFile {
-public:
-    struct statSerial st;
-    vector<string> files;
-    inodeFile(){};
-    MSGPACK_DEFINE(st, files);
-};
 
 map<string, int> getFiles()
 {
