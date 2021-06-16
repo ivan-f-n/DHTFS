@@ -2,21 +2,6 @@ language: c++
 os: linux
 dist: bionic
 before-install:
-# first we create a directory for the CMake binaries
-- DEPS_DIR="${TRAVIS_BUILD_DIR}/deps"
-- mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
-# we use wget to fetch the cmake binaries
-- travis_retry wget --no-check-certificate https://github.com/Kitware/CMake/releases/download/v3.20.4/cmake-3.20.4.tar.gz
-# extract the binaries; the output here is quite lengthy,
-# so we swallow it to not clutter up the travis console
-- tar -xvf cmake-3.20.4.tar.gz > /dev/null
-- mv cmake-3.20.4 cmake-install
-# add both the top-level directory and the bin directory from the archive
-# to the system PATH. By adding it to the front of the path we hide the
-# preinstalled CMake with our own.
-- PATH=${DEPS_DIR}/cmake-install:${DEPS_DIR}/cmake-install/bin:$PATH
-# don't forget to switch back to the main build directory once you are done
-- cd ${TRAVIS_BUILD_DIR}
 - sudo apt install libncurses5-dev libreadline-dev nettle-dev libgnutls28-dev libargon2-0-dev libmsgpack-dev librestbed-dev libjsoncpp-dev
 - sudo apt-get install python3 python3-pip python3-setuptools ninja-build
 - pip3 install wheel
@@ -26,6 +11,9 @@ before-install:
 - sudo apt-get install xz-utils
 - ./opendht.sh
 - sudo apt-get update
+- sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+- sudo apt-get update
+- sudo apt-get install cmake
 script:
 - (timeout 30 bash -c "echo ' ls' | make"; exit 0)
 - mkdir build && cd build
