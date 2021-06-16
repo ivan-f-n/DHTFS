@@ -16,10 +16,9 @@ before-install:
 - sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
 - sudo apt-get update
 - sudo apt-get install cmake
-- /usr/bin/cmake --version
 script:
 - (timeout 30 bash -c "echo ' ls' | make"; exit 0)
 - mkdir build && cd build
-- cmake ..
-- cmake --build .
+- /usr/bin/cmake ..
+- /usr/bin/cmake --build .
 - ctest
