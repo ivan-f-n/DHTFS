@@ -1,6 +1,7 @@
 # Peer-to-peer Filesystem by Ivan Fernandez
 
 [![Build Status](https://www.travis-ci.com/ivan-f-n/DHTFS.svg?branch=master)](https://www.travis-ci.com/ivan-f-n/DHTFS)
+
 A P2P Fuse user-space filesystem that uses a DHT for distributing and storing the files.
 
 ## Installation
