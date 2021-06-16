@@ -10,6 +10,9 @@ using namespace std;
 
 int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
 {
+    struct timeval tvalBefore, tvalAfter; // removed comma
+
+    gettimeofday(&tvalBefore, NULL);
     Logger("Truncating file " + string(path) + " to " + to_string(offset));
     if (!inst)
     {
@@ -40,7 +43,6 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
     blksize_t blkSize = i->st.st_blksize;
     if (offset > fileSize)
     {
-
         for (int j = 0; j <= (((int)((offset - offSub) / blkSize)) - (int)((fileSize - sizeSub) / blkSize)); j++)
         {
 
@@ -131,6 +133,8 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
                 cv.wait(lk, [&]
                         { return successful; });
             }
+            gettimeofday(&tvalAfter, NULL);
+            printf("Truncate block %d took %d ms\n", j, diff_ms(tvalBefore, tvalAfter));
         }
         i->st.st_size = offset;
     }
@@ -192,6 +196,8 @@ int FSpart::truncate(const char *path, off_t offset, struct fuse_file_info *fi)
         i->st.st_size = offset;
     }
 
+    gettimeofday(&tvalAfter, NULL);
+    printf("Truncate took %d ms\n", diff_ms(tvalBefore, tvalAfter));
     changeEntry(path, inode, runner);
     bool successful = false;
     runner->put(

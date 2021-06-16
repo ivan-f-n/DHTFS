@@ -46,21 +46,23 @@ int genInode()
 inodeFile *getInodeStruct(const char *path, dht::DhtRunner *dhtNode)
 {
     Logger("Get inode struct start");
-    inodeFile *i = new inodeFile();
     // get data from the dht
     if (getInodeBack(path) == -1)
         return NULL;
+    inodeFile *i = new inodeFile();
+    bool s = false;
     dhtNode->get<inodeFile>(dht::InfoHash::get(to_string(getInodeBack(path))), [&](inodeFile &&myObject)
-                           {
-                               *i = myObject;
-                               return false; // return false to stop the search
-                           });
+                            {
+                                *i = myObject;
+                                s = true;
+                                return false; // return false to stop the search
+                            });
 
     time_t now = time(0); //Save current time
-    mode_t s = i->st.st_mode;
-    while (i->st.st_mode == s && time(0) - 1 < now)
-        ; //Wait until value is received or timeout
+    while (!s && time(0) - 1 < now); //Wait until value is received or timeout
     Logger("Get inode struct end");
+    if(!s)
+        return NULL;
     return i;
 }
 

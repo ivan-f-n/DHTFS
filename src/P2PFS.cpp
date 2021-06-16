@@ -127,7 +127,6 @@ int main(int argc, char *argv[])
     FUSEArgs[4] = "allow_other";
     FUSEArgs[5] = argv[indexOfDirectory];
 
-
     //If the user provided an IP and port, bootstrap to that network
     string delimiter = ":";
     if (!newNetwork)

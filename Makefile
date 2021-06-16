@@ -14,7 +14,7 @@ $(PROG) : $(OBJS)
 
 -include $(OBJS:.o=.d)
 
-$(OBJDIR)/%.o: %.cpp
+$(OBJDIR)/%.o: src/%.cpp
 	$(CC) -c $(CFLAGS) src/$*.cpp -o $(OBJDIR)/$*.o
 	$(CC) -MM $(CFLAGS) src/$*.cpp > $(OBJDIR)/$*.d
 	@mv -f $(OBJDIR)/$*.d $(OBJDIR)/$*.d.tmp

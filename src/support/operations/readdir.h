@@ -25,7 +25,7 @@ int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
 
     if (i == NULL)
     {
-        Logger(string(path) + " not found");
+        Logger(string(path) + " directory not found");
         return -ENOENT;
     }
     else
@@ -36,9 +36,21 @@ int FSpart::readdir(const char *path, void *buf, fuse_fill_dir_t filler,
         }
         else
         {
+            int off, nextoff = 0, lenentry;
             for (string f : i->files)
             {
-                filler(buf, f.c_str(), NULL, 0, FUSE_FILL_DIR_PLUS);
+                struct stat st;
+                if (f.compare(".") == 0 || f.compare("..") == 0)
+                {
+                    if (filler(buf, f.c_str(), NULL, 0, FUSE_FILL_DIR_PLUS))
+                        break;
+                }
+                else
+                {
+                    getattr(f.c_str(), &st, fi);
+                    if (filler(buf, f.c_str(), &st, 0, FUSE_FILL_DIR_PLUS))
+                        break;
+                }
             }
         }
     }
